@@ -4,7 +4,7 @@
 //
 //  Created by Jacob Mobin on 3/21/25.
 //
-/*
+
 import SwiftUI
 import SceneKit
 
@@ -75,7 +75,7 @@ struct Library: View {
     // MARK: - Item View for Display
     func itemView(item: (name: String, fileURL: URL)) -> some View {
         VStack {
-            SceneView(fileURL: item.fileURL) // Show the 3D scene
+            SceneView2(fileURL: item.fileURL) // Show the 3D scene
                 .frame(width: 150, height: 150)
                 .cornerRadius(10)
                 .padding()
@@ -118,7 +118,7 @@ struct Library: View {
 }
 
 // MARK: - SceneView: Show OBJ file in SceneKit
-struct SceneView: View {
+struct SceneView2: View {
     var fileURL: URL
     @State private var scene = SCNScene()
     
@@ -156,4 +156,4 @@ struct SCNViewRepresentable: UIViewRepresentable {
 #Preview {
     Library()
 }
-*/
+
