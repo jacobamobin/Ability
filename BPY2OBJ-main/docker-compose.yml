@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  bpy2obj-api:
+    build: .
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./examples:/app/examples
+    environment:
+      - PYTHONUNBUFFERED=1 

@@ -9,12 +9,7 @@ import GoogleGenerativeAI
 import SwiftUI
 
 func generate3dPrompt(userInput: String, images: [UIImage]) async throws -> String {
-    // Load API key from keys.plist
-    guard let apiKey = getAPIKeyFromPlist() else {
-        return "Error: API key not found."
-    }
-
-    let model = GenerativeModel(name: "gemini-1.5-flash-latest", apiKey: apiKey)
+    let model = GenerativeModel(name: "gemini-1.5-flash-latest", apiKey: "AIzaSyCEmGiEY5P4leE3xJYhwR-2QEk_GbOQK3M")
 
     var prompt = """
     You are an expert AI assistant specializing in generating highly detailed and accurate 3D object descriptions based on textual input and images. Our goal is to design and help individuals with disabilities easily create custom 3D-printable prosthetics and attachments for everyday items. Using AI and CAD modeling, the app simplifies the design process, allowing users to generate highly functional, personalized assistive tools with just a simple text description. Your goal is to produce a description that makes accurate assumptions about size and other key functionality features for the 3D model which will assist with people who have disabilities to 3D print prosthetics. Your prompt will be later fed to an AI to create the 3D model itself, Thus I need you to accurately follow the following guidelines.
@@ -40,6 +35,7 @@ func generate3dPrompt(userInput: String, images: [UIImage]) async throws -> Stri
         </description>
     """
 
+    
     prompt += "\nUser's description: \(userInput)\n"
     
     if !images.isEmpty {
@@ -67,7 +63,7 @@ struct ButtonView: View {
             Button {
                 Task {
                     do {
-                        result = try await generate3dPrompt(userInput: "I can't hold chopsticks because of my tremors, I want a ring that goes around my finger, and a part that attaches to the chopsticks so I can hold them", images: [])
+                        result = try await generate3dPrompt(userInput: "I cant hold chopsticks because of my tremors, i want a ring that goes around my finger, and a part that attached to the chopsticks so i can hold them", images: [])
                     } catch {
                         result = "Error: \(error.localizedDescription)"
                     }
@@ -75,11 +71,12 @@ struct ButtonView: View {
             } label: {
                 Text("Run")
             }
-            ScrollView {
+            ScrollView{
                 Text(result)
                     .padding()
                     .foregroundColor(.black)
             }
+            
         }
     }
 }

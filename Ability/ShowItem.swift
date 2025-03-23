@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GoogleGenerativeAI
 
 enum GenerationStage {
     case idea
@@ -14,15 +15,23 @@ enum GenerationStage {
 }
 
 struct ShowItem: View {
+    @Binding var description: String
+    @Binding var selectedImages: [UIImage]
+    
     @State private var stage: GenerationStage = .idea
+    @State private var detailedPrompt: String = ""
+    @State private var objFileURL: URL?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 // A modern gradient background.
-                LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
-                               startPoint: .topLeading,
-                               endPoint: .bottomTrailing)
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                 .edgesIgnoringSafeArea(.all)
                 
                 // Display the current stage with smooth transitions.
@@ -31,36 +40,56 @@ struct ShowItem: View {
                     case .idea:
                         AnimatedScreenView(
                             title: "Generating Ideas",
-                            subhead: "We use large launguage models to cater models for your specific needs.",
+                            subhead: "Processing your description and images...",
                             imageName: "Gemini"
                         )
                     case .model:
                         AnimatedScreenView(
                             title: "Making Ideas Real",
-                            subhead: "We use advanced AI to transform your ideas into immersive printable 3D models.",
+                            subhead: "Generating 3D model from your prompt...",
                             imageName: "rocket-image"
                         )
                     case .finished:
-                        ShowItemFinished()
+                        // Transition to the finished file.
+                        ShowItemFinished(
+                            detailedPrompt: detailedPrompt,
+                            objFileURL: objFileURL,
+                            errorMessage: errorMessage
+                        )
                     }
-                    
                 }
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 1.5), value: stage)
             }
             .onAppear {
-                // Start with a slight delay for the initial animation.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    // Transition from idea stage to model stage after 3 seconds.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                // Start the generation chain asynchronously.
+                Task {
+                    do {
+                        // STEP 1: Generate the detailed prompt using the user's description and images.
+                        let prompt = try await generate3dPrompt(userInput: description, images: selectedImages)
+                        detailedPrompt = prompt
+                        print("Detailed prompt: \(prompt)")
+                        
+                        // Transition to the "model" stage.
                         withAnimation {
                             stage = .model
                         }
-                        // Transition to the finished stage after another 3 seconds.
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                            withAnimation {
-                                stage = .finished
-                            }
+                        
+                        // STEP 2: Generate the BPY script from the detailed prompt using Groq.
+                        let bpyURL = try await generateScriptUsingGroq(from: prompt)
+                        
+                        // STEP 3: Convert the BPY script into an OBJ file.
+                        objFileURL = try await convertBPYToOBJ(scriptURL: bpyURL)
+                        
+                        // Transition to finished stage.
+                        withAnimation {
+                            stage = .finished
+                        }
+                    } catch {
+                        errorMessage = error.localizedDescription
+                        // If an error occurs, transition to finished to show error info.
+                        withAnimation {
+                            stage = .finished
                         }
                     }
                 }
@@ -69,8 +98,7 @@ struct ShowItem: View {
     }
 }
 
-
-
+// MARK: - Animated Screen View
 struct AnimatedScreenView: View {
     var title: String
     var subhead: String
@@ -93,12 +121,12 @@ struct AnimatedScreenView: View {
                     .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     .onAppear {
                         withAnimation(.easeOut(duration: 1.5)) {
-                            if imageName == "gemini" {
+                            // Use a case-insensitive check.
+                            if imageName.lowercased() == "gemini" {
                                 imageScale = 1.5
                             } else {
                                 imageScale = 2.0
                             }
-                            
                         }
                     }
                 
@@ -129,27 +157,6 @@ struct AnimatedScreenView: View {
     }
 }
 
-struct FinishedView: View {
-    @State private var fadeIn = false
-    @State private var scaleUp = false
-    
-    var body: some View {
-        Text("Hello world")
-            .font(.system(size: 50, weight: .heavy, design: .rounded))
-            .foregroundColor(.white)
-            .scaleEffect(scaleUp ? 1.0 : 0.5)
-            .opacity(fadeIn ? 1.0 : 0.0)
-            .onAppear {
-                withAnimation(.easeOut(duration: 1.0)) {
-                    fadeIn = true
-                }
-                withAnimation(.easeOut(duration: 1.0).delay(0.5)) {
-                    scaleUp = true
-                }
-            }
-    }
-}
-
 #Preview {
-    ShowItem()
+    ShowItem(description: .constant("I have tremors and can't hold chopsticks properly."), selectedImages: .constant([]))
 }

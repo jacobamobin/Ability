@@ -4,177 +4,157 @@
 //
 //  Created by Jacob Mobin on 3/22/25.
 //
-
 import SwiftUI
 import SceneKit
 
 struct ShowItemFinished: View {
-    @State private var description: String = ""
+    var detailedPrompt: String
+    var objFileURL: URL?
+    var errorMessage: String?
+
+    @State private var descriptionText: String = ""
     @State private var scene = SCNScene()
-    @State private var isSavedToLibrary = false // Track if the button is pressed
+    @State private var isSavedToLibrary = false
+    @State private var isProcessing = false
+    @State private var localObjFileURL: URL? // Added this to track the local URL of the file
 
     var body: some View {
         ZStack {
-            LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
-                           startPoint: .topLeading,
-                           endPoint: .bottomTrailing)
-                .edgesIgnoringSafeArea(.all)
+            LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .edgesIgnoringSafeArea(.all)
 
-            VStack (spacing: 30){
-                /*
-                Text("Item")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .padding() */
-
-                SceneView(scene: scene)
-                    .frame(width: 350, height: 350)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(radius: 10)
-                    .padding()
-                    .onAppear {
-                        setupScene()
-                    }
-
-                // REDO TEXT
-                TextEditor(text: $description)
+            VStack(spacing: 30) {
+                SceneView(
+                    scene: scene,
+                    options: [.autoenablesDefaultLighting, .allowsCameraControl]
+                )
+                .frame(width: 350, height: 350)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(radius: 10)
+                .padding()
+                .onAppear {
+                    setupScene()
+                    descriptionText = detailedPrompt
+                }
+                
+                TextEditor(text: $descriptionText)
                     .frame(height: 80)
                     .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .stroke(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [.purple, .blue]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 5
-                                    )
-                            )
-                            .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 5)
+                    .background(Color.gray.opacity(0.2)) // Subtle background
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
                     )
                     .padding(.horizontal)
-                    .overlay(
-                        HStack(spacing: 10) {
-                            
-                            // Microphone Button
-                            Button(action: {
-                                //UIApplication.shared.openKeyboardForDictation()
-                            }) {
-                                Image(systemName: "mic.fill")
-                                    .font(.title3)
-                                    .foregroundColor(.white)
-                                    .frame(width: 50, height: 50)
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color(hex: "5661d4"), Color(hex: "4465d6")]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .clipShape(Circle())
-                                    .shadow(radius: 5)
-                            }
-                            
-                            // Done Button
-                            Button(action: {
-                                //UIApplication.shared.endEditing()
-                            }) {
-                                Text("Make Changes")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(width: 140, height: 50)
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color(hex: "4366d8"), Color(hex: "0b6fe7")]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .cornerRadius(25)
-                                    .shadow(radius: 5)
-                            }
-                        }
-                        .padding(8)
-                        .offset(x: -17, y: 32),
-                        alignment: .bottomTrailing
-                    ).padding(.bottom, 20)
-                
-                
-                // BUTTONS
+
                 HStack {
                     Button(action: {
-                        // Generate Model Action
+                        // Replace with actual save logic
+                        saveToFiles(url: localObjFileURL) { success in
+                            isSavedToLibrary = success
+                            if success {
+                                descriptionText = "" // Clear text after saving
+                            }
+                        }
                     }) {
                         HStack {
-                            Image(systemName: "square.and.arrow.down.fill")
+                            Image(systemName: isSavedToLibrary ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
                                 .font(.headline)
-                            Text("Save To Files")
+                            Text(isSavedToLibrary ? "Saved" : "Save To Files")
                                 .font(.headline)
-                                .lineLimit(1)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [.teal, .purple]),
-                                startPoint: .leading,
-                                endPoint: .trailing)
+                            LinearGradient(gradient: Gradient(colors: [
+                                isSavedToLibrary ? .green : .teal,
+                                isSavedToLibrary ? .green : .purple
+                            ]), startPoint: .leading, endPoint: .trailing)
                         )
                         .foregroundColor(.white)
                         .cornerRadius(12)
                         .shadow(radius: 5)
+                        .disabled(isSavedToLibrary) // Disable after saving
                     }
 
                     Button(action: {
-                        isSavedToLibrary = true
+                        processUserInput()
                     }) {
                         HStack {
-                            Image(systemName: "books.vertical.fill")
+                            Image(systemName: "arrow.clockwise") // Refresh icon
                                 .font(.headline)
-                            Text("Save To Library")
-                                .lineLimit(1)
+                            Text("Regenerate")
                                 .font(.headline)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: isSavedToLibrary ? [.gray, .gray] : [.orange, .pink]),
-                                startPoint: .leading,
-                                endPoint: .trailing)
-                        )
-                        .foregroundColor(.white) // Grey out text when pressed
+                        .background(LinearGradient(gradient: Gradient(colors: [.orange, .pink]), startPoint: .leading, endPoint: .trailing))
+                        .foregroundColor(.white)
                         .cornerRadius(12)
                         .shadow(radius: 5)
-                        .disabled(isSavedToLibrary) // Disable the button when pressed
+                        .disabled(isProcessing)
                     }
-                    
-                }.padding(10)
-                    .padding(.bottom, 40)
+                }
+                .padding(10)
+                .padding(.bottom, 40)
+
+                if let errorMessage = errorMessage {
+                    Text("Error: \(errorMessage)")
+                        .foregroundColor(.red)
+                }
             }
-            
         }
     }
 
     func setupScene() {
-        // Create a simple square (replace with your actual model)
-        let box = SCNBox(width: 0.5, height: 0.5, length: 0.5, chamferRadius: 0)
-        let boxNode = SCNNode(geometry: box)
-        scene.rootNode.addChildNode(boxNode)
-
-        // Position the camera (adjust as needed)
-        let cameraNode = SCNNode()
-        cameraNode.camera = SCNCamera()
-        cameraNode.position = SCNVector3(x: 0, y: 0, z: 2)
-        scene.rootNode.addChildNode(cameraNode)
+        // Set up the 3D scene using the OBJ file
+        if let objURL = objFileURL, let loadedScene = try? SCNScene(url: objURL, options: nil) {
+            scene = loadedScene
+        } else {
+            scene = SCNScene()
+            let box = SCNBox(width: 0.5, height: 0.5, length: 0.5, chamferRadius: 0)
+            let boxNode = SCNNode(geometry: box)
+            scene.rootNode.addChildNode(boxNode)
+        }
     }
-}
 
-#Preview {
-    ShowItemFinished()
+    mutating func processUserInput() {
+        isProcessing = true
+        Task {
+            do {
+                // Replace with your actual process
+                let bpyURL = try await generateScriptUsingGroq(from: descriptionText)
+                let objURL = try await convertBPYToOBJ(scriptURL: bpyURL)
+                
+                // Update the state on the main thread
+                await MainActor.run {
+                    self.localObjFileURL = objURL  // Update the local object file URL
+                    self.setupScene()              // Reconfigure the scene with the new object
+                    self.isProcessing = false       // Stop processing
+                }
+            } catch {
+                // Handle errors
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isProcessing = false
+                }
+            }
+        }
+    }
+
+    func saveToFiles(url: URL?, completion: @escaping (Bool) -> Void) {
+        // Save logic
+        guard let url = url else {
+            completion(false)
+            return
+        }
+        
+        print("Saving file to: \(url)")
+        completion(true)
+    }
 }
