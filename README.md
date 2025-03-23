@@ -7,8 +7,10 @@ Download: Not published yet
 
 ![alt text](./res/f1.png)
 
-#How to Use
-Enter a descriptive promt
+# How to Use
+In the given Text box enter the 3D model you want to be built, see image below for an exmaple
+
+![alt text](./res/u1.png)
 
 Features
  
