@@ -12,10 +12,10 @@ struct TabBar: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NewItemView()
+            NewItem()
                 .tabItem {
                     Image(systemName: "cube.fill")
-                    Text("Object")
+                    Text("New Item")
                 }
                 .tag(0)
 
@@ -32,13 +32,6 @@ struct TabBar: View {
                     Text("How To Use")
                 }
                 .tag(2)
-
-            Settings()
-                .tabItem {
-                    Image(systemName: "gearshape.fill")
-                    Text("Settings")
-                }
-                .tag(3)
         }
         .accentColor(.blue)
     }
