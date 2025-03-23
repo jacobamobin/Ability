@@ -5,7 +5,7 @@ This project enables users to generate and refine 3D models through text and ima
 Go watch Demo Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 Download: Not published yet
 
-![alt text](./res/ability/Frame 1.png)
+![alt text](./res/ability/Frame_1.png)
 
 Features
  
