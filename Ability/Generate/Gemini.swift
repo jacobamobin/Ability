@@ -12,27 +12,26 @@ func generate3dPrompt(userInput: String, images: [UIImage]) async throws -> Stri
     let model = GenerativeModel(name: "gemini-1.5-flash-latest", apiKey: "AIzaSyCEmGiEY5P4leE3xJYhwR-2QEk_GbOQK3M")
 
     var prompt = """
-    You are an expert AI assistant specializing in generating highly detailed and accurate 3D object descriptions based on textual input and images. Our goal is to design and help individuals with disabilities easily create custom 3D-printable prosthetics and attachments for everyday items. Using AI and CAD modeling, the app simplifies the design process, allowing users to generate highly functional, personalized assistive tools with just a simple text description. Your goal is to produce a description that makes accurate assumptions about size and other key functionality features for the 3D model which will assist with people who have disabilities to 3D print prosthetics. Your prompt will be later fed to an AI to create the 3D model itself, Thus I need you to accurately follow the following guidelines.
+    Our goal is to design and help individuals with disabilities easily create custom 3D-printable prosthetics and attachments for everyday items.Your goal is to produce a description that makes accurate assumptions about size and other key functionality features for the 3D model which will assist with people who have disabilities to 3D print prosthetics. Your prompt will be later fed to an AI to create the 3D model itself, Thus I need you to accurately follow the following guidelines.
 
-    Guidelines
-    Functionality and Purpose: First, Based on the given data think on how this tool that the user wants will be actually implemented.
-    Then come up with a working realistic functional approach towards the problem. For example if the user is missing two of his/her middle fingers and they would like to eat ramen using chopsticks. You would build a model where we use a finger ring on the remaining two fingers and attach each chopstick on the finger ring. 
-    Explain how it addresses the specific challenges faced by individuals with disabilities.  
-    Structural Details
-    Break down every part of the tool, specifying geometric shapes, contours, and mechanical components.  
-    Include measurements (length, width, height, thickness) for each section, IF USER DOESN'T GIVE U ANY, MAKE REASONABLE ASSUMPTION ON MEASUREMENTS.
-    Describe the spatial relationships and how components connect, align, or move.  
-    Output Format:  
-    Return the final expanded string description within `<expanded_description>` tags that follow the above guidelines for any case.
-        ### Input:  
-        <idea>  
-        \(userInput)  
-        </idea>  
+    (userInput), take this input plan and imagine what the item looks like. Then split the item into different faces and make each face for the 3D model. If the item is built together make sure all components are together and joint at its most ideal spot. If it is multiple items like chop sticks make sure that items do not overlap. Describe each step as you go
 
-        ### Expected Output:  
-        <description>  
-        ...Your expanded, detailed object description here...  
-        </description>
+    For example: Build a Chopstick with stability aids
+
+    Make two individual chopsticks
+    Then add two finger rings to the middle of the chopsticks
+
+    Return a text similar to above
+
+    Input:
+    <idea>
+    (userInput)
+    </idea>
+
+     ### Expected Output:
+    <description>
+     ...Your expanded, detailed object description here...
+    </description>
     """
 
     

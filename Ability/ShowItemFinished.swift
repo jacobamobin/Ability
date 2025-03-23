@@ -7,154 +7,180 @@
 import SwiftUI
 import SceneKit
 
+// MARK: - Finished View
 struct ShowItemFinished: View {
     var detailedPrompt: String
     var objFileURL: URL?
     var errorMessage: String?
-
+    
     @State private var descriptionText: String = ""
     @State private var scene = SCNScene()
     @State private var isSavedToLibrary = false
-    @State private var isProcessing = false
-    @State private var localObjFileURL: URL? // Added this to track the local URL of the file
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
-
-            VStack(spacing: 30) {
-                SceneView(
-                    scene: scene,
-                    options: [.autoenablesDefaultLighting, .allowsCameraControl]
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .frame(width: 350, height: 350)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .shadow(radius: 10)
-                .padding()
-                .onAppear {
-                    setupScene()
-                    descriptionText = detailedPrompt
-                }
+                .edgesIgnoringSafeArea(.all)
                 
-                TextEditor(text: $descriptionText)
-                    .frame(height: 80)
-                    .padding()
-                    .background(Color.gray.opacity(0.2)) // Subtle background
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                VStack(spacing: 30) {
+                    // SceneView that displays the loaded OBJ model.
+                    SceneView(
+                        scene: scene,
+                        options: [.autoenablesDefaultLighting, .allowsCameraControl]
                     )
-                    .padding(.horizontal)
-
-                HStack {
-                    Button(action: {
-                        // Replace with actual save logic
-                        saveToFiles(url: localObjFileURL) { success in
-                            isSavedToLibrary = success
-                            if success {
-                                descriptionText = "" // Clear text after saving
-                            }
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: isSavedToLibrary ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
-                                .font(.headline)
-                            Text(isSavedToLibrary ? "Saved" : "Save To Files")
-                                .font(.headline)
-                        }
+                    .frame(width: 350, height: 350)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(radius: 10)
+                    .padding()
+                    .onAppear {
+                        setupScene()
+                        // Pre-fill text editor with the detailed prompt.
+                        descriptionText = detailedPrompt
+                    }
+                    
+                    // Text editor for the generated description.
+                    TextEditor(text: $descriptionText)
+                    
+                        .frame(height: 80)
                         .padding()
-                        .frame(maxWidth: .infinity)
                         .background(
-                            LinearGradient(gradient: Gradient(colors: [
-                                isSavedToLibrary ? .green : .teal,
-                                isSavedToLibrary ? .green : .purple
-                            ]), startPoint: .leading, endPoint: .trailing)
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [.purple, .blue]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 5
+                                        )
+                                )
+                                .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 5)
                         )
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
-                        .disabled(isSavedToLibrary) // Disable after saving
-                    }
-
-                    Button(action: {
-                        processUserInput()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise") // Refresh icon
-                                .font(.headline)
-                            Text("Regenerate")
-                                .font(.headline)
+                        .padding(.horizontal)
+                        .overlay(
+                            HStack(spacing: 10) {
+                                // Microphone Button
+                                Button(action: {
+                                    UIApplication.shared.windows.first?.endEditing(true)
+                                    // Pull up keyboard for dictation (if supported)
+                                    UIApplication.shared.sendAction(#selector(UIResponder.becomeFirstResponder), to: nil, from: nil, for: nil)
+                                }) {
+                                    Image(systemName: "mic.fill")
+                                        .font(.title3)
+                                        .foregroundColor(.white)
+                                        .frame(width: 50, height: 50)
+                                        .background(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color(hex: "5661d4"), Color(hex: "4465d6")]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .clipShape(Circle())
+                                        .shadow(radius: 5)
+                                }
+                                
+                                // Done Button
+                                Button(action: {
+                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                }) {
+                                    Text("Make Edits")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .frame(width: 120, height: 50)
+                                        .background(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color(hex: "4366d8"), Color(hex: "0b6fe7")]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .cornerRadius(25)
+                                        .shadow(radius: 5)
+                                }
+                            }
+                                .padding(8)
+                                .offset(x: -17, y: 32),
+                            alignment: .bottomTrailing
+                        ).padding(.bottom, 20)
+                    
+                    // Action buttons.
+                    HStack {
+                        Button(action: {
+                            // Save to files action.
+                        }) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.down.fill")
+                                    .font(.headline)
+                                Text("Save To Files")
+                                    .font(.headline)
+                                    .lineLimit(1)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [.teal, .purple]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
                         }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [.orange, .pink]), startPoint: .leading, endPoint: .trailing))
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
-                        .disabled(isProcessing)
+                        
+                        Button(action: {
+                            isSavedToLibrary = true
+                        }) {
+                            HStack {
+                                Image(systemName: "books.vertical.fill")
+                                    .font(.headline)
+                                Text("Save To Library")
+                                    .lineLimit(1)
+                                    .font(.headline)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: isSavedToLibrary ? [.gray, .gray] : [.orange, .pink]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
+                            .disabled(isSavedToLibrary)
+                        }
                     }
                 }
-                .padding(10)
-                .padding(.bottom, 40)
-
-                if let errorMessage = errorMessage {
-                    Text("Error: \(errorMessage)")
-                        .foregroundColor(.red)
-                }
+                .padding()
             }
         }
     }
 
-    func setupScene() {
-        // Set up the 3D scene using the OBJ file
-        if let objURL = objFileURL, let loadedScene = try? SCNScene(url: objURL, options: nil) {
-            scene = loadedScene
-        } else {
-            scene = SCNScene()
-            let box = SCNBox(width: 0.5, height: 0.5, length: 0.5, chamferRadius: 0)
-            let boxNode = SCNNode(geometry: box)
-            scene.rootNode.addChildNode(boxNode)
-        }
+    private func setupScene() {
+        // Your logic to load the 3D model into SceneKit
+        guard let url = objFileURL else { return }
+        let scene = SCNScene(named: url.path)
+        self.scene = scene ?? SCNScene()
     }
+}
 
-    mutating func processUserInput() {
-        isProcessing = true
-        Task {
-            do {
-                // Replace with your actual process
-                let bpyURL = try await generateScriptUsingGroq(from: descriptionText)
-                let objURL = try await convertBPYToOBJ(scriptURL: bpyURL)
-                
-                // Update the state on the main thread
-                await MainActor.run {
-                    self.localObjFileURL = objURL  // Update the local object file URL
-                    self.setupScene()              // Reconfigure the scene with the new object
-                    self.isProcessing = false       // Stop processing
-                }
-            } catch {
-                // Handle errors
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isProcessing = false
-                }
-            }
-        }
-    }
-
-    func saveToFiles(url: URL?, completion: @escaping (Bool) -> Void) {
-        // Save logic
-        guard let url = url else {
-            completion(false)
-            return
-        }
-        
-        print("Saving file to: \(url)")
-        completion(true)
-    }
+#Preview {
+    ShowItemFinished(
+        detailedPrompt: "Your generated prompt goes here...",
+        objFileURL: nil,
+        errorMessage: nil
+    )
 }

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import GoogleGenerativeAI
+import SceneKit
 
 enum GenerationStage {
     case idea
@@ -22,19 +22,16 @@ struct ShowItem: View {
     @State private var detailedPrompt: String = ""
     @State private var objFileURL: URL?
     @State private var errorMessage: String?
+    @State private var navigateToFinished = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // A modern gradient background.
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .edgesIgnoringSafeArea(.all)
+                LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                               startPoint: .topLeading,
+                               endPoint: .bottomTrailing)
+                    .edgesIgnoringSafeArea(.all)
                 
-                // Display the current stage with smooth transitions.
                 Group {
                     switch stage {
                     case .idea:
@@ -50,47 +47,30 @@ struct ShowItem: View {
                             imageName: "rocket-image"
                         )
                     case .finished:
-                        // Transition to the finished file.
-                        ShowItemFinished(
-                            detailedPrompt: detailedPrompt,
-                            objFileURL: objFileURL,
-                            errorMessage: errorMessage
-                        )
+                        NavigationLink(destination: ShowItemFinished(detailedPrompt: detailedPrompt, objFileURL: objFileURL, errorMessage: errorMessage), isActive: $navigateToFinished) {
+                        }
                     }
                 }
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 1.5), value: stage)
             }
             .onAppear {
-                // Start the generation chain asynchronously.
                 Task {
                     do {
-                        // STEP 1: Generate the detailed prompt using the user's description and images.
                         let prompt = try await generate3dPrompt(userInput: description, images: selectedImages)
                         detailedPrompt = prompt
-                        print("Detailed prompt: \(prompt)")
+                        withAnimation { stage = .model }
                         
-                        // Transition to the "model" stage.
-                        withAnimation {
-                            stage = .model
-                        }
-                        
-                        // STEP 2: Generate the BPY script from the detailed prompt using Groq.
                         let bpyURL = try await generateScriptUsingGroq(from: prompt)
-                        
-                        // STEP 3: Convert the BPY script into an OBJ file.
                         objFileURL = try await convertBPYToOBJ(scriptURL: bpyURL)
                         
-                        // Transition to finished stage.
                         withAnimation {
                             stage = .finished
+                            navigateToFinished = true
                         }
                     } catch {
                         errorMessage = error.localizedDescription
-                        // If an error occurs, transition to finished to show error info.
-                        withAnimation {
-                            stage = .finished
-                        }
+                        withAnimation { stage = .finished; navigateToFinished = true }
                     }
                 }
             }
@@ -111,7 +91,7 @@ struct AnimatedScreenView: View {
     var body: some View {
         ZStack {
             GlowEffect()
-                .offset(y: -17)
+                .offset(y: -18)
             VStack(spacing: 20) {
                 Image(imageName)
                     .resizable()
@@ -121,12 +101,7 @@ struct AnimatedScreenView: View {
                     .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     .onAppear {
                         withAnimation(.easeOut(duration: 1.5)) {
-                            // Use a case-insensitive check.
-                            if imageName.lowercased() == "gemini" {
-                                imageScale = 1.5
-                            } else {
-                                imageScale = 2.0
-                            }
+                            imageScale = imageName.lowercased() == "gemini" ? 1.5 : 2.0
                         }
                     }
                 
@@ -156,6 +131,7 @@ struct AnimatedScreenView: View {
         }
     }
 }
+
 
 #Preview {
     ShowItem(description: .constant("I have tremors and can't hold chopsticks properly."), selectedImages: .constant([]))
