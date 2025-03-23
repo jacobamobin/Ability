@@ -12,8 +12,7 @@ Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
 Requires-Python: >=3.7
 Requires-Dist: flask==2.0.1
-Requires-Dist: bpy==3.6.0
-Requires-Dist: numpy==1.23.5
+Requires-Dist: numpy>=1.24.0
 Requires-Dist: fastapi==0.95.0
 Requires-Dist: uvicorn==0.21.1
 Requires-Dist: python-multipart==0.0.6

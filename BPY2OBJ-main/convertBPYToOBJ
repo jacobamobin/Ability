@@ -5,7 +5,7 @@ func convertBPYToOBJ(scriptURL: URL) async throws -> URL {
   let scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
   
   // Create JSON request
-  let apiURL = URL(string: "http://localhost:8000/convert")!
+  let apiURL = URL(string: "http://127.0.0.1:8000/convert")!
   
   var request = URLRequest(url: apiURL)
   request.httpMethod = "POST"

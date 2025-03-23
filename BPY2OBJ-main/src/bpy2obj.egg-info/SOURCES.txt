@@ -4,6 +4,7 @@ src/bpy2obj/__init__.py
 src/bpy2obj/api.py
 src/bpy2obj/cli.py
 src/bpy2obj/converter.py
+src/bpy2obj/server.py
 src/bpy2obj.egg-info/PKG-INFO
 src/bpy2obj.egg-info/SOURCES.txt
 src/bpy2obj.egg-info/dependency_links.txt

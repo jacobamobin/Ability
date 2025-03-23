@@ -6,6 +6,45 @@ import tempfile
 import os
 import traceback
 
+def clean_script(script):
+    """Clean up the script by removing markdown and unwanted characters"""
+    # Remove markdown code block markers
+    script = script.replace('```', '')
+    
+    # Remove any trailing or leading whitespace
+    script = script.strip()
+    
+    # Remove any text after description markers
+    markers = [
+        "This script creates",
+        "Note:",
+        "The script",
+        "This model",
+        "The model",
+        "This will",
+        "The script will",
+        "This code",
+        "The code"
+    ]
+    
+    for marker in markers:
+        if marker in script:
+            script = script.split(marker)[0].strip()
+    
+    # Remove any trailing dashes
+    if script.endswith('--'):
+        script = script[:-2]
+    
+    # Remove any trailing backticks
+    if script.endswith('`'):
+        script = script[:-1]
+    
+    # Remove any trailing newlines
+    script = script.rstrip()
+    
+    return script
+
+
 def create_blender_script(script_content, output_path):
     """Create a complete Blender script that includes the necessary imports and export code"""
     return f"""
@@ -30,6 +69,9 @@ bpy.ops.export_scene.obj(
 """
 
 def run_blender_script(script_content):
+    # Clean the script before processing
+    script_content = clean_script(script_content)
+    
     # Create a temporary file for the script
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_script:
         # Create temporary output path
@@ -78,10 +120,22 @@ def run_blender_script(script_content):
                 pass
 
 class BPYServer(BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
+
     def do_GET(self):
+        print(f"Received GET request to {self.path}")
         if self.path == '/health':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
+            self._send_cors_headers()
             self.end_headers()
             response = {
                 "status": "healthy",
@@ -90,25 +144,49 @@ class BPYServer(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode())
         else:
             self.send_response(404)
+            self._send_cors_headers()
             self.end_headers()
             self.wfile.write(b"Not found")
 
     def do_POST(self):
+        print(f"\nReceived POST request to {self.path}")
+        print("Headers:", self.headers)
+        
         if self.path == '/convert':
             try:
                 # Read the request body
                 content_length = int(self.headers.get('Content-Length', 0))
+                print(f"Content-Length: {content_length}")
+                
                 if content_length == 0:
                     raise ValueError("Empty request body")
                 
                 post_data = self.rfile.read(content_length)
                 print(f"Received raw data: {post_data[:100]}...")
                 
+                # Try to parse as JSON first
                 try:
                     request_data = json.loads(post_data.decode('utf8'))
-                except json.JSONDecodeError as e:
-                    print(f"JSON decode error: {str(e)}")
-                    raise ValueError(f"Invalid JSON data: {str(e)}")
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, try to parse as multipart form data
+                    content_type = self.headers.get('Content-Type', '')
+                    if 'multipart/form-data' in content_type:
+                        # Extract the script content from multipart data
+                        boundary = content_type.split('boundary=')[1]
+                        parts = post_data.decode('utf8').split('--' + boundary)
+                        for part in parts:
+                            if 'name="script"' in part:
+                                script_content = part.split('\r\n\r\n')[1].strip()
+                                if script_content.endswith('--'):
+                                    script_content = script_content[:-2]
+                                request_data = {'script': script_content}
+                                break
+                        else:
+                            raise ValueError("No script found in multipart form data")
+                    else:
+                        raise ValueError("Unsupported content type")
+                
+                print(f"Parsed request data: {json.dumps(request_data, indent=2)}")
                 
                 if not isinstance(request_data, dict):
                     raise ValueError("Request data must be a JSON object")
@@ -129,6 +207,7 @@ class BPYServer(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-type', 'application/octet-stream')
                 self.send_header('Content-Disposition', 'attachment; filename=model.obj')
+                self._send_cors_headers()
                 self.end_headers()
                 self.wfile.write(obj_data)
                 print("Response sent successfully")
@@ -139,19 +218,21 @@ class BPYServer(BaseHTTPRequestHandler):
                 traceback.print_exc()
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
+                self._send_cors_headers()
                 self.end_headers()
                 error_response = {"error": str(e)}
                 self.wfile.write(json.dumps(error_response).encode())
         else:
             self.send_response(404)
+            self._send_cors_headers()
             self.end_headers()
             self.wfile.write(b"Not found")
 
 def run_server(port=8000):
-    server_address = ('', port)
+    server_address = ('0.0.0.0', port)  # Changed to 0.0.0.0 to accept connections from any IP
     try:
         httpd = HTTPServer(server_address, BPYServer)
-        print(f"Server running on port {port}...")
+        print(f"Server running on 0.0.0.0:{port}...")
         httpd.serve_forever()
     except OSError as e:
         if e.errno == 48:  # Address already in use

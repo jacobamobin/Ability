@@ -38,20 +38,7 @@ func generateScriptUsingGroq(from userInput: String) async throws -> URL {
   let sysprompt = """
   Generate a Blender Python (bpy) script for a 3D model based on the following description. The script should create a functional 3D object within Blender, using the bpy library to define geometry.
 
-  Ensure that the generated model follows these guidelines:
-  - Start with proper imports: "import bpy" at the top of the script
-  - Use bpy to create a mesh with basic simple topology
-  - Use realistic dimensions and ensure the object is properly scaled
-  - The object should be a simple mesh only
-  - DO NOT create materials, textures, or any surface appearance properties
-  - DO NOT include any camera setup or lighting configurations
-  - DO NOT include any rendering configurations
-  - Make the script completely basic and minimal
-  - Use only the most basic Blender operations (no advanced modifiers)
-  - Avoid using math.pi - use 3.14159 instead
-  - Define all variables before using them
-  - Clean up the scene at the beginning by removing all existing objects
-  - Keep the geometry very simple - just basic shapes
+  
   
   Description: \(userInput)
   
@@ -146,7 +133,7 @@ func convertBPYToOBJ(scriptURL: URL) async throws -> URL {
   let scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
   
   // Create multipart form data request
-  let apiURL = URL(string: "https://714c-2606-8ac0-200-994-f730-e4ef-3d44-9f70.ngrok-free.app/convert")!
+  let apiURL = URL(string: "http://127.0.0.1:8000/convert")!
   
   var request = URLRequest(url: apiURL)
   request.httpMethod = "POST"

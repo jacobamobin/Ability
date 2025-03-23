@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM --platform=linux/amd64 debian:bullseye-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -28,11 +28,11 @@ WORKDIR /app
 # Copy application files
 COPY . /app/
 
-# Install the application
-RUN pip3 install --no-cache-dir -e .
+# Install the application using Blender's Python
+RUN /opt/blender-3.6.0-linux-x64/3.6/python/bin/python3.10 -m pip install --no-cache-dir -e .
 
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["bpy2obj-server", "--host", "0.0.0.0", "--port", "8000"] 
+# Run the application using Blender's Python
+CMD ["/opt/blender-3.6.0-linux-x64/blender", "--background", "--python", "/app/src/bpy2obj/server.py", "--", "--host", "0.0.0.0", "--port", "8000"] 

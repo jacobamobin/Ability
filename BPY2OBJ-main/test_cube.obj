@@ -1,6 +1,6 @@
-# Blender v3.6.0 OBJ File: ''
+# Blender v3.6.21 OBJ File: ''
 # www.blender.org
-mtllib tmpb469qd09.mtl
+mtllib output.mtl
 o Cube
 v -1.000000 -1.000000 1.000000
 v -1.000000 1.000000 1.000000
