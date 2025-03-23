@@ -7,5 +7,8 @@ Download: Not published yet
 
 ![alt text](./res/f1.png)
 
+#How to Use
+Enter a descriptive promt
+
 Features
  
