@@ -7,12 +7,11 @@
 import SwiftUI
 import SceneKit
 
-// MARK: - Finished View
 struct ShowItemFinished: View {
     var detailedPrompt: String
     var objFileURL: URL?
     var errorMessage: String?
-    
+    @Environment(\.dismiss) private var dismiss  // To dismiss current view
     @State private var descriptionText: String = ""
     @State private var scene = SCNScene()
     @State private var isSavedToLibrary = false
@@ -21,7 +20,7 @@ struct ShowItemFinished: View {
         NavigationStack {
             ZStack {
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
+                    gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -39,13 +38,11 @@ struct ShowItemFinished: View {
                     .padding()
                     .onAppear {
                         setupScene()
-                        // Pre-fill text editor with the detailed prompt.
                         descriptionText = detailedPrompt
                     }
                     
                     // Text editor for the generated description.
                     TextEditor(text: $descriptionText)
-                    
                         .frame(height: 80)
                         .padding()
                         .background(
@@ -70,7 +67,6 @@ struct ShowItemFinished: View {
                                 // Microphone Button
                                 Button(action: {
                                     UIApplication.shared.windows.first?.endEditing(true)
-                                    // Pull up keyboard for dictation (if supported)
                                     UIApplication.shared.sendAction(#selector(UIResponder.becomeFirstResponder), to: nil, from: nil, for: nil)
                                 }) {
                                     Image(systemName: "mic.fill")
@@ -110,7 +106,8 @@ struct ShowItemFinished: View {
                                 .padding(8)
                                 .offset(x: -17, y: 32),
                             alignment: .bottomTrailing
-                        ).padding(.bottom, 20)
+                        )
+                        .padding(.bottom, 20)
                     
                     // Action buttons.
                     HStack {
@@ -166,14 +163,70 @@ struct ShowItemFinished: View {
                 }
                 .padding()
             }
+            .navigationTitle("Item Finished")
+            
+            
         }
     }
 
     private func setupScene() {
-        // Your logic to load the 3D model into SceneKit
         guard let url = objFileURL else { return }
-        let scene = SCNScene(named: url.path)
-        self.scene = scene ?? SCNScene()
+        
+        // Create a new scene
+        scene = SCNScene()
+        
+        // Create an orange material
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor.orange
+        material.lightingModel = .physicallyBased
+        material.roughness.contents = 0.7
+        material.metalness.contents = 0.0
+        
+        // Load the OBJ file
+        if let modelScene = try? SCNScene(url: url, options: nil) {
+            // Get all nodes from the loaded scene
+            let modelNodes = modelScene.rootNode.childNodes
+            
+            // Add each node to our scene
+            for node in modelNodes {
+                // Apply the orange material to all geometries
+                node.geometry?.materials = [material]
+                scene.rootNode.addChildNode(node)
+            }
+            
+            // Center the model
+            let (min, max) = scene.rootNode.boundingBox
+            let center = SCNVector3(
+                (min.x + max.x) / 2,
+                (min.y + max.y) / 2,
+                (min.z + max.z) / 2
+            )
+            scene.rootNode.position = SCNVector3(-center.x, -center.y, -center.z)
+            
+            // Add ambient light
+            let ambientLight = SCNNode()
+            ambientLight.light = SCNLight()
+            ambientLight.light?.type = .ambient
+            ambientLight.light?.intensity = 1000
+            ambientLight.light?.color = UIColor.white
+            scene.rootNode.addChildNode(ambientLight)
+            
+            // Add directional light
+            let directionalLight = SCNNode()
+            directionalLight.light = SCNLight()
+            directionalLight.light?.type = .directional
+            directionalLight.light?.intensity = 1000
+            directionalLight.light?.color = UIColor.white
+            directionalLight.position = SCNVector3(5, 5, 5)
+            directionalLight.eulerAngles = SCNVector3(-Float.pi/4, Float.pi/4, 0)
+            scene.rootNode.addChildNode(directionalLight)
+            
+            // Set up camera
+            let cameraNode = SCNNode()
+            cameraNode.camera = SCNCamera()
+            cameraNode.position = SCNVector3(0, 0, 5)
+            scene.rootNode.addChildNode(cameraNode)
+        }
     }
 }
 

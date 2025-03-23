@@ -1,0 +1,34 @@
+func convertBPYToOBJ(scriptURL: URL) async throws -> URL {
+  print("Converting BPY script to OBJ...")
+  
+  // Read the script content
+  let scriptContent = try String(contentsOf: scriptURL, encoding: .utf8)
+  
+  // Create JSON request
+  let apiURL = URL(string: "http://localhost:8000/convert")!
+  
+  var request = URLRequest(url: apiURL)
+  request.httpMethod = "POST"
+  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+  
+  // Create the request body
+  let requestBody = ["script": scriptContent]
+  let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
+  request.httpBody = jsonData
+  
+  // Perform the request
+  let (data, response) = try await URLSession.shared.data(for: request)
+  
+  guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+    let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+    throw GenerateBPYScriptError.conversionFailed("Failed to convert BPY to OBJ: \(errorMessage)")
+  }
+  
+  // Save the OBJ data to a file
+  let objFileURL = FileManager.default.temporaryDirectory.appendingPathComponent("generated_model.obj")
+  try data.write(to: objFileURL)
+  
+  print("OBJ file saved to: \(objFileURL.path)")
+  
+  return objFileURL
+} 

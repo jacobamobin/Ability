@@ -33,7 +33,7 @@ struct NewItem: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
                                startPoint: .topLeading,
@@ -195,6 +195,7 @@ struct NewItem: View {
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
+                   
                 }
                 .confirmationDialog("Choose Image Source", isPresented: $showImagePickerOptions, titleVisibility: .visible) {
                     Button("Photo Library") {

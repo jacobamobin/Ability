@@ -47,7 +47,9 @@ struct ShowItem: View {
                             imageName: "rocket-image"
                         )
                     case .finished:
+                        // Only navigate to ShowItemFinished after the stage is finished
                         NavigationLink(destination: ShowItemFinished(detailedPrompt: detailedPrompt, objFileURL: objFileURL, errorMessage: errorMessage), isActive: $navigateToFinished) {
+                            EmptyView()
                         }
                     }
                 }
@@ -66,15 +68,31 @@ struct ShowItem: View {
                         
                         withAnimation {
                             stage = .finished
-                            navigateToFinished = true
+                        }
+                        
+                        // Delay navigation after stage changes to finished
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            // Only trigger navigation if stage is finished and no other navigation is pending
+                            if stage == .finished {
+                                navigateToFinished = true
+                            }
                         }
                     } catch {
                         errorMessage = error.localizedDescription
-                        withAnimation { stage = .finished; navigateToFinished = true }
+                        withAnimation {
+                            stage = .finished
+                        }
+                        // Trigger navigation to finished in case of error
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            // Only trigger navigation if stage is finished
+                            if stage == .finished {
+                                navigateToFinished = true
+                            }
+                        }
                     }
                 }
             }
-        }
+        }.navigationBarHidden(true)
     }
 }
 
@@ -91,7 +109,7 @@ struct AnimatedScreenView: View {
     var body: some View {
         ZStack {
             GlowEffect()
-                .offset(y: -18)
+                .offset(y: 26)
             VStack(spacing: 20) {
                 Image(imageName)
                     .resizable()
@@ -131,7 +149,6 @@ struct AnimatedScreenView: View {
         }
     }
 }
-
 
 #Preview {
     ShowItem(description: .constant("I have tremors and can't hold chopsticks properly."), selectedImages: .constant([]))
