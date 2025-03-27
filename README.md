@@ -95,9 +95,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Collaborative features
 - [ ] Advanced customization options
 
-## Contact
-- Email: [your-email@example.com]
-- Twitter: [@yourhandle]
-- Website: [your-website.com]
-
  
