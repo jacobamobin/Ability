@@ -9,7 +9,7 @@ import GoogleGenerativeAI
 import SwiftUI
 
 func generate3dPrompt(userInput: String, images: [UIImage]) async throws -> String {
-    let model = GenerativeModel(name: "gemini-1.5-flash-latest", apiKey: "AIzaSyCEmGiEY5P4leE3xJYhwR-2QEk_GbOQK3M")
+    let model = GenerativeModel(name: "gemini-1.5-flash-latest", apiKey: "")
 
     var prompt = """
     Our goal is to design and help individuals with disabilities easily create custom 3D-printable prosthetics and attachments for everyday items.Your goal is to produce a description that makes accurate assumptions about size and other key functionality features for the 3D model which will assist with people who have disabilities to 3D print prosthetics. Your prompt will be later fed to an AI to create the 3D model itself, Thus I need you to accurately follow the following guidelines.
